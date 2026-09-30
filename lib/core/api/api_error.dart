@@ -114,7 +114,7 @@ class ApiException implements Exception {
       case ApiErrorCode.invalidQr:
         return 'Invalid or revoked QR code.';
       case ApiErrorCode.gateTokenExists:
-        return 'This student already has a gate token.';
+        return message.isNotEmpty ? message : 'This token is already assigned.';
       case ApiErrorCode.permissionDenied:
         return 'Your account is not allowed to do this.';
       default:
