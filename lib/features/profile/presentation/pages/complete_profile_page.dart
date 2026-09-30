@@ -57,12 +57,21 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _studentNumber = TextEditingController();
-  final _email = getIt<TokenStorage>().email;
+  final _emailFuture = getIt<TokenStorage>().email;
+  String? _userEmail;
   String? _section;
   String? _year;
   String? _branch;
   File? _image;
   bool _imageMissing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    getIt<TokenStorage>().email.then((email) {
+      if (mounted) setState(() => _userEmail = email);
+    });
+  }
 
   @override
   void dispose() {
@@ -177,7 +186,7 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
                   ),
                   const SizedBox(height: 24),
                   FutureBuilder<String?>(
-                    future: _email,
+                    future: _emailFuture,
                     builder: (context, snap) => snap.data == null
                         ? const SizedBox.shrink()
                         : Padding(
@@ -215,6 +224,12 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
                       if (val.isEmpty) return 'Enter your student number';
                       if (!RegExp(r'^(24|25|26)\d{5,6}$').hasMatch(val)) {
                         return 'Student number must be 7-8 digits starting with 24, 25, or 26';
+                      }
+                      if (_userEmail != null && _userEmail!.isNotEmpty) {
+                        final localPart = _userEmail!.split('@').first.toLowerCase();
+                        if (!localPart.endsWith(val.toLowerCase())) {
+                          return 'Student number must match your email ($_userEmail)';
+                        }
                       }
                       return null;
                     },

@@ -9,6 +9,7 @@ class StudentProfile {
   final String studentNumber;
   final String? email;
   final String? imageUrl;
+  final String? gateToken;
 
   const StudentProfile({
     required this.fullName,
@@ -18,6 +19,7 @@ class StudentProfile {
     required this.studentNumber,
     this.email,
     this.imageUrl,
+    this.gateToken,
   });
 
   factory StudentProfile.fromJson(Map<String, dynamic> json) => StudentProfile(
@@ -28,6 +30,7 @@ class StudentProfile {
         studentNumber: json['student_number']?.toString() ?? '',
         email: json['email']?.toString(),
         imageUrl: (json['image'] ?? json['image_url'])?.toString(),
+        gateToken: (json['gate_token'] ?? json['token_number'])?.toString(),
       );
 }
 

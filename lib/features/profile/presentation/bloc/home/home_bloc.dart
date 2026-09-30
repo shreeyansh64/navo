@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:navo/core/api/api_error.dart';
+import 'package:navo/features/profile/domain/model/student_profile.dart';
 import 'package:navo/features/profile/domain/repository/profile_repository.dart';
 
 part 'home_event.dart';
@@ -12,10 +13,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HomeLoadRequested>((event, emit) async {
       // Show the cached pass straight away, then replace it with a fresh one.
       final cached = state.qrDataUri ?? await repository.cachedQr();
-      emit(HomeState(qrDataUri: cached));
+      emit(HomeState(qrDataUri: cached, profile: state.profile));
       try {
         final pass = await repository.getMe();
-        emit(HomeState(status: HomeStatus.loaded, qrDataUri: pass.qrDataUri));
+        emit(HomeState(
+          status: HomeStatus.loaded,
+          qrDataUri: pass.qrDataUri,
+          profile: pass.profile,
+        ));
       } on ApiException catch (e) {
         if (e.code == ApiErrorCode.profileIncomplete) {
           return emit(const HomeState(status: HomeStatus.profileIncomplete));
@@ -23,6 +28,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         emit(HomeState(
           status: cached != null ? HomeStatus.offline : HomeStatus.failure,
           qrDataUri: cached,
+          profile: state.profile,
           error: e,
         ));
       }

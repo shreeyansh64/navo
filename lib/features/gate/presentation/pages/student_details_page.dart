@@ -24,8 +24,36 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
     super.dispose();
   }
 
-  /// Image URLs may be relative to the server root.
-  String _absolute(String url) => Uri.parse(dotenv.env['BASE_URL']!).resolve(url).toString();
+  /// Image URLs may be relative to the server root or contain host mismatch.
+  String _absolute(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return '';
+
+    final base = dotenv.env['BASE_URL'] ?? 'http://10.0.2.2:8000/api';
+    final baseUri = Uri.parse(base);
+    final rootUri = Uri(
+      scheme: baseUri.scheme,
+      host: baseUri.host,
+      port: baseUri.hasPort ? baseUri.port : null,
+    );
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && uri.hasScheme) {
+      if (uri.host == 'localhost' ||
+          uri.host == '127.0.0.1' ||
+          (baseUri.host != 'localhost' && uri.host != baseUri.host)) {
+        return uri.replace(
+          scheme: baseUri.scheme,
+          host: baseUri.host,
+          port: baseUri.hasPort ? baseUri.port : null,
+        ).toString();
+      }
+      return trimmed;
+    }
+
+    final path = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+    return rootUri.resolve(path).toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +85,8 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
           final tokenError = e?.code == ApiErrorCode.gateTokenExists
               ? e!.displayMessage
               : e?.field('token_number') ?? e?.field('qr_token');
+          final hasAssignedToken = student.gateToken != null && student.gateToken!.isNotEmpty;
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -70,13 +100,37 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundColor: scheme.primaryContainer,
-                          foregroundImage: student.imageUrl == null || student.imageUrl!.isEmpty
-                              ? null
-                              : NetworkImage(_absolute(student.imageUrl!)),
-                          child: Icon(Icons.person, size: 48, color: scheme.onPrimaryContainer),
+                        ClipOval(
+                          child: Container(
+                            width: 96,
+                            height: 96,
+                            color: scheme.primaryContainer,
+                            child: (student.imageUrl != null && student.imageUrl!.trim().isNotEmpty)
+                                ? Image.network(
+                                    _absolute(student.imageUrl!),
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: SizedBox(
+                                          width: 28,
+                                          height: 28,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            value: loadingProgress.expectedTotalBytes != null
+                                                ? loadingProgress.cumulativeBytesLoaded /
+                                                    loadingProgress.expectedTotalBytes!
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(Icons.person, size: 48, color: scheme.onPrimaryContainer);
+                                    },
+                                  )
+                                : Icon(Icons.person, size: 48, color: scheme.onPrimaryContainer),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(student.fullName,
@@ -103,32 +157,80 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                Form(
-                  key: _formKey,
-                  child: TextFormField(
-                    controller: _token,
-                    autofocus: true,
-                    keyboardType: TextInputType.number,
-                    textInputAction: TextInputAction.done,
-                    style: text.headlineSmall,
-                    forceErrorText: tokenError,
-                    validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a token number' : null,
-                    decoration: const InputDecoration(
-                      labelText: 'Token number',
-                      prefixIcon: Icon(Icons.confirmation_number_outlined),
+                if (hasAssignedToken) ...[
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green.shade400, width: 1.5),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.verified_rounded, color: Colors.green.shade700, size: 28),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Token Already Assigned',
+                              style: text.titleMedium?.copyWith(
+                                color: Colors.green.shade800,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '#${student.gateToken}',
+                          style: text.headlineMedium?.copyWith(
+                            color: Colors.green.shade900,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'This student is already checked in.',
+                          style: TextStyle(color: Colors.green.shade700),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                LoadingButton(
-                  label: 'Assign token',
-                  loading: state.status == GateStatus.assigning,
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      context.read<GateBloc>().add(GateTokenSubmitted(_token.text.trim()));
-                    }
-                  },
-                ),
+                  const SizedBox(height: 20),
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.qr_code_scanner_rounded),
+                    label: const Text('Scan Next Student'),
+                  ),
+                ] else ...[
+                  Form(
+                    key: _formKey,
+                    child: TextFormField(
+                      controller: _token,
+                      autofocus: true,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      style: text.headlineSmall,
+                      forceErrorText: tokenError,
+                      validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a token number' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Token number',
+                        prefixIcon: Icon(Icons.confirmation_number_outlined),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  LoadingButton(
+                    label: 'Assign token',
+                    loading: state.status == GateStatus.assigning,
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        context.read<GateBloc>().add(GateTokenSubmitted(_token.text.trim()));
+                      }
+                    },
+                  ),
+                ],
               ],
             ),
           );

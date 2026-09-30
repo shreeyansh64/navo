@@ -49,6 +49,54 @@ class _HomeView extends StatelessWidget {
                         : Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (state.profile?.gateToken != null && state.profile!.gateToken!.isNotEmpty) ...[
+                                Container(
+                                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Colors.green.shade300, width: 1.5),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.green.withValues(alpha: 0.1),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.verified_rounded, color: Colors.green.shade700, size: 28),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Gate Token Assigned',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.green.shade800,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Token #${state.profile!.gateToken}',
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green.shade900,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
                               Container(
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
@@ -64,12 +112,28 @@ class _HomeView extends StatelessWidget {
                                 ),
                                 child: Image.memory(
                                   qrBytes(qr),
-                                  width: 260,
-                                  height: 260,
+                                  width: 240,
+                                  height: 240,
                                   gaplessPlayback: true,
                                   filterQuality: FilterQuality.none,
                                 ),
                               ),
+                              if (state.profile != null) ...[
+                                const SizedBox(height: 20),
+                                Text(
+                                  state.profile!.fullName,
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${state.profile!.studentNumber} • ${state.profile!.branch ?? ''} (${state.profile!.section})',
+                                  style: TextStyle(color: scheme.onSurfaceVariant),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                               if (state.status == HomeStatus.offline) ...[
                                 const SizedBox(height: 16),
                                 Text(

@@ -7,6 +7,7 @@ class GateStudent {
   final String section;
   final String? email;
   final String? imageUrl;
+  final String? gateToken;
 
   const GateStudent({
     required this.fullName,
@@ -16,6 +17,7 @@ class GateStudent {
     required this.section,
     this.email,
     this.imageUrl,
+    this.gateToken,
   });
 
   factory GateStudent.fromJson(Map<String, dynamic> json) => GateStudent(
@@ -26,6 +28,7 @@ class GateStudent {
         section: json['section']?.toString() ?? '',
         email: json['email']?.toString(),
         imageUrl: (json['image'] ?? json['image_url'])?.toString(),
+        gateToken: (json['gate_token'] ?? json['token_number'])?.toString(),
       );
 }
 
