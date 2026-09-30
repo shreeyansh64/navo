@@ -222,8 +222,8 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
                     validator: (v) {
                       final val = (v ?? '').trim();
                       if (val.isEmpty) return 'Enter your student number';
-                      if (!RegExp(r'^(24|25|26)\d{5,6}$').hasMatch(val)) {
-                        return 'Student number must be 7-8 digits starting with 24, 25, or 26';
+                      if (!RegExp(r'^(25|26)\d{5,6}$').hasMatch(val)) {
+                        return 'Student number must be 7-8 digits starting with 25 or 26';
                       }
                       if (_userEmail != null && _userEmail!.isNotEmpty) {
                         if (!_userEmail!.toLowerCase().contains(val.toLowerCase())) {
