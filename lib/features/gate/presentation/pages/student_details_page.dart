@@ -17,6 +17,8 @@ class StudentDetailsPage extends StatefulWidget {
 class _StudentDetailsPageState extends State<StudentDetailsPage> {
   final _formKey = GlobalKey<FormState>();
   final _token = TextEditingController();
+  bool _isReassigning = false;
+  bool _userClearedError = false;
 
   @override
   void dispose() {
@@ -67,6 +69,7 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
           if (state.status == GateStatus.assigned) return Navigator.of(context).pop(state.entry);
           final e = state.error;
           if (e == null) return;
+          setState(() => _userClearedError = false);
           switch (e.code) {
             case ApiErrorCode.gateTokenExists || ApiErrorCode.validation:
               break; // shown under the token field
@@ -82,9 +85,11 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
         builder: (context, state) {
           final student = state.student!;
           final e = state.error;
-          final tokenError = e?.code == ApiErrorCode.gateTokenExists
-              ? e!.displayMessage
-              : e?.field('token_number') ?? e?.field('qr_token');
+          final tokenError = _userClearedError
+              ? null
+              : (e?.code == ApiErrorCode.gateTokenExists
+                  ? e!.displayMessage
+                  : e?.field('token_number') ?? e?.field('qr_token'));
           final hasAssignedToken = student.gateToken != null && student.gateToken!.isNotEmpty;
 
           return SingleChildScrollView(
@@ -160,7 +165,7 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                if (hasAssignedToken) ...[
+                if (hasAssignedToken && !_isReassigning) ...[
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -200,7 +205,19 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _isReassigning = true;
+                        _token.text = student.gateToken ?? '';
+                        _userClearedError = false;
+                      });
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Reassign / Change Token'),
+                  ),
+                  const SizedBox(height: 12),
                   FilledButton.icon(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.qr_code_scanner_rounded),
@@ -216,23 +233,41 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                       textInputAction: TextInputAction.done,
                       style: text.headlineSmall,
                       forceErrorText: tokenError,
+                      onChanged: (_) {
+                        if (!_userClearedError && tokenError != null) {
+                          setState(() => _userClearedError = true);
+                        }
+                      },
                       validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a token number' : null,
-                      decoration: const InputDecoration(
-                        labelText: 'Token number',
-                        prefixIcon: Icon(Icons.confirmation_number_outlined),
+                      decoration: InputDecoration(
+                        labelText: _isReassigning ? 'New token number' : 'Token number',
+                        prefixIcon: const Icon(Icons.confirmation_number_outlined),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   LoadingButton(
-                    label: 'Assign token',
+                    label: _isReassigning ? 'Update token' : 'Assign token',
                     loading: state.status == GateStatus.assigning,
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
+                        setState(() => _userClearedError = false);
                         context.read<GateBloc>().add(GateTokenSubmitted(_token.text.trim()));
                       }
                     },
                   ),
+                  if (_isReassigning) ...[
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _isReassigning = false;
+                          _userClearedError = false;
+                        });
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                  ],
                 ],
               ],
             ),
