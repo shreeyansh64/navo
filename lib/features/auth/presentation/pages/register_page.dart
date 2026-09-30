@@ -74,7 +74,7 @@ class _RegisterViewState extends State<_RegisterView> {
           icon: Icons.person_add_alt_1_rounded,
           title: 'Create account',
           subtitle: 'Use your college email ($collegeDomain)',
-          footer: const DesignCredit(),
+          footer: const DeveloperCredit(),
           child: Form(
             key: _formKey,
             child: Column(

@@ -55,7 +55,7 @@ class _LoginViewState extends State<_LoginView> {
         icon: Icons.qr_code_2_rounded,
         title: 'Welcome back',
         subtitle: 'Log in to get your entry pass',
-        footer: const DesignCredit(),
+        footer: const DeveloperCredit(),
         child: Form(
           key: _formKey,
           child: Column(

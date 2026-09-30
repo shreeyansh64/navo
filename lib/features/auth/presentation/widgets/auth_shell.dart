@@ -164,15 +164,15 @@ class _Bubble extends StatelessWidget {
 }
 
 /// Credit line shown at the bottom of the login and register screens.
-class DesignCredit extends StatelessWidget {
-  const DesignCredit({super.key});
+class DeveloperCredit extends StatelessWidget {
+  const DeveloperCredit({super.key});
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Text.rich(
       TextSpan(
-        text: 'Designed by ',
+        text: 'Developed by ',
         children: [
           TextSpan(
             text: 'SDC-SI',
