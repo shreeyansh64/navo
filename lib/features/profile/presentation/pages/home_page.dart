@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:navo/app_router.dart';
 import 'package:navo/core/di/injection.dart';
+import 'package:navo/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:navo/features/auth/presentation/widgets/logout_button.dart';
 import 'package:navo/features/profile/domain/model/student_profile.dart';
 import 'package:navo/features/profile/presentation/bloc/home/home_bloc.dart';
@@ -27,97 +29,130 @@ class _HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Entry pass'), actions: const [LogoutButton()]),
-      body: BlocConsumer<HomeBloc, HomeState>(
-        listenWhen: (prev, cur) => cur.status == HomeStatus.profileIncomplete,
-        listener: (context, state) => goTo(const CompleteProfilePage()),
-        builder: (context, state) {
-          final qr = state.qrDataUri;
-          return RefreshIndicator(
-            onRefresh: () async {
-              final bloc = context.read<HomeBloc>()..add(HomeLoadRequested());
-              await bloc.stream.firstWhere((s) => s.status != HomeStatus.loading);
-            },
-            child: LayoutBuilder(
-              builder: (context, box) => SingleChildScrollView(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        body: BlocConsumer<HomeBloc, HomeState>(
+          listenWhen: (prev, cur) => cur.status == HomeStatus.profileIncomplete,
+          listener: (context, state) => goTo(const CompleteProfilePage()),
+          builder: (context, state) {
+            final qr = state.qrDataUri;
+            return RefreshIndicator(
+              // Start below the status bar, which the header extends under.
+              edgeOffset: MediaQuery.paddingOf(context).top,
+              onRefresh: () async {
+                final bloc = context.read<HomeBloc>()..add(HomeLoadRequested());
+                await bloc.stream.firstWhere((s) => s.status != HomeStatus.loading);
+              },
+              child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: box.maxHeight),
-                  child: Center(
-                    child: qr == null
-                        ? _Placeholder(state: state)
-                        : Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _FlipCard(
-                                front: _CardFace(
-                                  child: Image.memory(
-                                    qrBytes(qr),
-                                    width: 240,
-                                    height: 240,
-                                    gaplessPlayback: true,
-                                    filterQuality: FilterQuality.none,
-                                  ),
-                                ),
-                                back: _CardFace(child: _TokenFace(token: state.profile?.gateToken)),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.swipe_rounded, size: 16, color: scheme.onSurfaceVariant),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Swipe to see your gate token',
-                                    style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-                                  ),
-                                ],
-                              ),
-                              if (state.profile != null) ...[
-                                const SizedBox(height: 20),
-                                Text(
-                                  state.profile!.fullName,
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 12),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                                  child: Wrap(
-                                    alignment: WrapAlignment.center,
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: [
-                                      _Pill(icon: Icons.numbers_rounded, label: state.profile!.studentNumber),
-                                      if (state.profile!.branch?.isNotEmpty ?? false)
-                                        _Pill(icon: Icons.account_tree_outlined, label: state.profile!.branch!),
-                                      _Pill(icon: Icons.groups_outlined, label: state.profile!.section),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              if (state.status == HomeStatus.offline) ...[
-                                const SizedBox(height: 16),
-                                _Pill(
-                                  icon: Icons.cloud_off_rounded,
-                                  label: 'Offline · showing saved pass',
-                                  background: scheme.surfaceContainerHighest,
-                                  foreground: scheme.onSurfaceVariant,
-                                ),
-                              ],
-                            ],
-                          ),
+                slivers: [
+                  const SliverToBoxAdapter(
+                    child: BrandHeader(
+                      icon: Icons.qr_code_2_rounded,
+                      title: 'Entry pass',
+                      subtitle: 'Show this QR at the gate',
+                      action: LogoutButton(color: Colors.white),
+                    ),
                   ),
-                ),
+                  // Pass centred in the space left under the header; scrolls on short screens.
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 28),
+                        child: Center(
+                          child: FadeSlideIn(
+                            child: qr == null
+                                ? _Placeholder(state: state)
+                                : _Pass(qr: qr, state: state),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
+    );
+  }
+}
+
+/// The QR card with the student's details under it.
+class _Pass extends StatelessWidget {
+  final String qr;
+  final HomeState state;
+  const _Pass({required this.qr, required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _FlipCard(
+          front: _CardFace(
+            child: Image.memory(
+              qrBytes(qr),
+              width: 240,
+              height: 240,
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.none,
+            ),
+          ),
+          back: _CardFace(child: _TokenFace(token: state.profile?.gateToken)),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.swipe_rounded, size: 16, color: scheme.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Text(
+              'Swipe to see your gate token',
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+        if (state.profile != null) ...[
+          const SizedBox(height: 20),
+          Text(
+            state.profile!.fullName,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _Pill(icon: Icons.numbers_rounded, label: state.profile!.studentNumber),
+                if (state.profile!.branch?.isNotEmpty ?? false)
+                  _Pill(icon: Icons.account_tree_outlined, label: state.profile!.branch!),
+                _Pill(icon: Icons.groups_outlined, label: state.profile!.section),
+              ],
+            ),
+          ),
+        ],
+        if (state.status == HomeStatus.offline) ...[
+          const SizedBox(height: 16),
+          _Pill(
+            icon: Icons.cloud_off_rounded,
+            label: 'Offline · showing saved pass',
+            background: scheme.surfaceContainerHighest,
+            foreground: scheme.onSurfaceVariant,
+          ),
+        ],
+      ],
     );
   }
 }

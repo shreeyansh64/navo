@@ -22,7 +22,6 @@ class AuthShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -38,22 +37,13 @@ class AuthShell extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _Header(icon: icon, title: title, subtitle: subtitle),
+                      BrandHeader(icon: icon, title: title, subtitle: subtitle),
                       Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 480),
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
-                            child: TweenAnimationBuilder<double>(
-                              tween: Tween(begin: 0, end: 1),
-                              duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 400),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, v, child) => Opacity(
-                                opacity: v,
-                                child: Transform.translate(offset: Offset(0, 16 * (1 - v)), child: child),
-                              ),
-                              child: child,
-                            ),
+                            child: FadeSlideIn(child: child),
                           ),
                         ),
                       ),
@@ -74,16 +64,47 @@ class AuthShell extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+/// Fades and slides its [child] up into place when first shown.
+class FadeSlideIn extends StatelessWidget {
+  final Widget child;
+  const FadeSlideIn({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, child) => Opacity(
+        opacity: v,
+        child: Transform.translate(offset: Offset(0, 16 * (1 - v)), child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Gradient header with the page icon, title and subtitle. Shows a back button
+/// when the route can pop, and an optional [action] in the top right corner.
+class BrandHeader extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  const _Header({required this.icon, required this.title, required this.subtitle});
+  final Widget? action;
+  const BrandHeader({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.action,
+  });
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final canPop = Navigator.of(context).canPop();
+    final hasTopRow = canPop || action != null;
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(36)),
       child: DecoratedBox(
@@ -101,13 +122,19 @@ class _Header extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (canPop)
-                      const Padding(
-                        padding: EdgeInsets.only(left: 8, top: 4),
-                        child: BackButton(color: Colors.white),
+                    if (hasTopRow)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8, top: 4, right: 8),
+                        child: Row(
+                          children: [
+                            if (canPop) const BackButton(color: Colors.white),
+                            const Spacer(),
+                            ?action,
+                          ],
+                        ),
                       ),
                     Padding(
-                      padding: EdgeInsets.fromLTRB(24, canPop ? 12 : 36, 24, 32),
+                      padding: EdgeInsets.fromLTRB(24, hasTopRow ? 12 : 36, 24, 32),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

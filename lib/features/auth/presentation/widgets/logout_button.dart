@@ -6,7 +6,10 @@ import 'package:navo/features/auth/presentation/pages/login_page.dart';
 
 /// No logout endpoint exists: dropping the stored tokens is the logout.
 class LogoutButton extends StatelessWidget {
-  const LogoutButton({super.key});
+  /// Icon colour; defaults to the surrounding icon button theme.
+  final Color? color;
+
+  const LogoutButton({super.key, this.color});
 
   Future<void> _logout(BuildContext context) async {
     final ok = await showDialog<bool>(
@@ -56,6 +59,7 @@ class LogoutButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: 'Log out',
+      color: color,
       icon: const Icon(Icons.logout_rounded),
       onPressed: () => _logout(context),
     );
