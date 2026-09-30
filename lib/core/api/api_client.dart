@@ -1,82 +1,95 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:navo/features/auth/presentation/pages/login_page.dart';
-import 'package:navo/main.dart';
+import 'package:navo/core/constants/api_endpoints.dart';
+import 'package:navo/core/storage/token_storage.dart';
 
 class ApiClient {
-  final FlutterSecureStorage storage;
-  final baseUrl = dotenv.env['BASE_URL'];
-  ApiClient({required this.storage});
-  Dio getDio() {
-    Dio dio = Dio(
-      BaseOptions(
-        baseUrl: baseUrl!,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-      ),
+  final TokenStorage tokenStorage;
+
+  /// Called when the refresh token is rejected. The app decides how to navigate.
+  void Function()? onSessionExpired;
+
+  late final Dio dio;
+
+  /// Bare client for refresh and retries, so they never re-enter the auth interceptor.
+  late final Dio _plainDio;
+
+  ApiClient({required this.tokenStorage}) {
+    final options = BaseOptions(
+      baseUrl: dotenv.env['BASE_URL']!,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 20),
     );
+    dio = Dio(options)..interceptors.add(_AuthInterceptor(this));
+    _plainDio = Dio(options);
+  }
+}
 
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) async {
-          final token = await storage.read(key: 'access_token');
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
-          return handler.next(options);
-        },
+class _AuthInterceptor extends QueuedInterceptor {
+  final ApiClient client;
+  _AuthInterceptor(this.client);
 
-        onError: (error, handler) async {
-          if (error.response?.statusCode == 401) {
-            final refreshed = await _refreshToken();
-            if (refreshed) {
-              final retryResponse = await _retry(dio, error.requestOptions);
-              return handler.resolve(retryResponse);
-            } else {
-              await _clearTokens();
+  TokenStorage get _storage => client.tokenStorage;
 
-              navigatorKey.currentState?.pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-                (route) => false,
-              );
-            }
-          }
-          return handler.next(error);
-        },
-      ),
-    );
-    return dio;
+  bool _isPublic(RequestOptions o) => ApiEndpoints.public.contains(o.path);
+
+  @override
+  Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    if (!_isPublic(options)) {
+      final token = await _storage.accessToken;
+      if (token != null) options.headers['Authorization'] = 'Bearer $token';
+    }
+    handler.next(options);
   }
 
-  Future<bool> _refreshToken() async {
-    try {
-      final refreshToken = await storage.read(key: 'refresh_token');
-      if (refreshToken == null) return false;
+  @override
+  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
+    final options = err.requestOptions;
+    if (err.response?.statusCode != 401 || _isPublic(options) || options.extra['retried'] == true) {
+      return handler.next(err);
+    }
 
-      final response = await Dio().post(
-        "$baseUrl/api/auth/refresh/",
-        data: {"refresh_token": refreshToken},
-      );
-      await storage.write(
-        key: 'access_token',
-        value: response.data['access_token'],
-      );
-      return true;
-    } catch (e) {
-      return false;
+    // Requests queued behind a refresh may already have a newer token than the one they sent.
+    final sentWith = options.headers['Authorization'];
+    var access = await _storage.accessToken;
+    if (access == null || sentWith == 'Bearer $access') {
+      access = await _refresh();
+      if (access == null) return handler.next(err);
+    }
+
+    try {
+      options
+        ..headers['Authorization'] = 'Bearer $access'
+        ..extra['retried'] = true;
+      if (options.data is FormData) options.data = (options.data as FormData).clone();
+      handler.resolve(await client._plainDio.fetch(options));
+    } on DioException catch (e) {
+      handler.next(e);
     }
   }
 
-  Future<Response> _retry(Dio dio, RequestOptions requestOptions) async {
-    final token = await storage.read(key: 'access_token');
-    requestOptions.headers['Authorization'] = 'Bearer $token';
-    return await dio.fetch(requestOptions);
+  /// Returns the new access token, or null if the refresh did not succeed.
+  Future<String?> _refresh() async {
+    final refresh = await _storage.refreshToken;
+    if (refresh == null) {
+      await _expire();
+      return null;
+    }
+    try {
+      final res = await client._plainDio.post(ApiEndpoints.refresh, data: {'refresh': refresh});
+      final access = res.data['access'] as String;
+      // Refresh tokens rotate, so the new one must be stored too.
+      await _storage.saveTokens(access: access, refresh: res.data['refresh'] as String);
+      return access;
+    } on DioException catch (e) {
+      // Only a rejected token ends the session. Network failures keep it for a later retry.
+      if (e.response != null) await _expire();
+      return null;
+    }
   }
 
-  Future<void> _clearTokens() async {
-    await storage.delete(key: 'access_token');
-    await storage.delete(key: 'refresh_token');
+  Future<void> _expire() async {
+    await _storage.clear();
+    client.onSessionExpired?.call();
   }
 }

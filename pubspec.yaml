@@ -39,6 +39,7 @@ dependencies:
   get_it: ^9.3.0
   google_nav_bar: ^5.0.7
   image_picker: ^1.2.3
+  mobile_scanner: ^7.4.2
   pinput: ^6.0.2
 
 dev_dependencies:
@@ -62,6 +63,8 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - .env
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
