@@ -88,6 +88,13 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                         Row(
                           children: [
                             _Detail(label: 'Student no.', value: student.studentNumber),
+                            _Detail(label: 'Branch', value: student.branch ?? '-'),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            _Detail(label: 'Year', value: student.year ?? '-'),
                             _Detail(label: 'Section', value: student.section),
                           ],
                         ),

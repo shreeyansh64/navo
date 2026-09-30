@@ -12,16 +12,27 @@ import 'package:navo/features/auth/presentation/widgets/logout_button.dart';
 import 'package:navo/features/profile/presentation/bloc/complete_profile/complete_profile_bloc.dart';
 import 'package:navo/features/profile/presentation/pages/home_page.dart';
 
-const sections = ['S-1', 'S-2', 'S-3', 'S-4', 'S-5', 'S-6', 'S-7', 'S-8', 'S-9', 'S-10', 'S-11',
-  'S-12', 'S-13', 'S-14', 'S-15', 'S-16', 'S-17', 'S-18', 'S-19', 'S-20', 'S-21', 'S-22', 'S-23',
-  'S-24', 'S-25', 'S-26', 'S-27'];
+final firstYearSections = [for (int i = 1; i <= 25; i++) 'S$i'];
+const secondYearSections = ['1', '2', '3'];
 
 /// Dropdown label -> value sent to the API.
-const years = {'1st year': '1', '2nd year': '2'};
+const years = {'1st year': '1st year', '2nd year': '2nd year'};
 
 /// Must match the backend's BranchValidator.
-const branches = ['ME', 'ECE', 'EE', 'CSE', 'CSE(HINDI)', 'AIML', 'CSE(DS)', 'CSE(AIML)', 'IT', 'CS',
-  'CS IT', 'CE'];
+const branches = [
+  'ME',
+  'ECE',
+  'EE',
+  'CSE',
+  'CSE(HINDI)',
+  'AIML',
+  'CSE(DS)',
+  'CSE(AIML)',
+  'IT',
+  'CS',
+  'CS IT',
+  'CE',
+];
 
 class CompleteProfilePage extends StatelessWidget {
   const CompleteProfilePage({super.key});
@@ -58,6 +69,12 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
     _name.dispose();
     _studentNumber.dispose();
     super.dispose();
+  }
+
+  List<String> get _availableSections {
+    if (_year == '1st year') return firstYearSections;
+    if (_year == '2nd year') return secondYearSections;
+    return const [];
   }
 
   /// Camera only: the photo has to be taken on the spot, not picked from the gallery.
@@ -193,24 +210,18 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
                     forceErrorText: err?.code == ApiErrorCode.studentNumberTaken
                         ? err!.displayMessage
                         : err?.field('student_number'),
-                    validator: (v) => (v ?? '').trim().isEmpty ? 'Enter your student number' : null,
+                    validator: (v) {
+                      final val = (v ?? '').trim();
+                      if (val.isEmpty) return 'Enter your student number';
+                      if (!RegExp(r'^(25|26)\d{5,6}$').hasMatch(val)) {
+                        return 'Student number must be 7-8 digits starting with 25 or 26';
+                      }
+                      return null;
+                    },
                     decoration: const InputDecoration(
                       labelText: 'Student number',
                       prefixIcon: Icon(Icons.numbers_rounded),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _section,
-                    menuMaxHeight: 320,
-                    forceErrorText: err?.field('section'),
-                    validator: (v) => v == null ? 'Select your section' : null,
-                    decoration: const InputDecoration(
-                      labelText: 'Section',
-                      prefixIcon: Icon(Icons.groups_outlined),
-                    ),
-                    items: [for (final s in sections) DropdownMenuItem(value: s, child: Text(s))],
-                    onChanged: (v) => setState(() => _section = v),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
@@ -224,7 +235,14 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
                     items: [
                       for (final y in years.entries) DropdownMenuItem(value: y.value, child: Text(y.key)),
                     ],
-                    onChanged: (v) => setState(() => _year = v),
+                    onChanged: (v) {
+                      setState(() {
+                        _year = v;
+                        if (!_availableSections.contains(_section)) {
+                          _section = null;
+                        }
+                      });
+                    },
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
@@ -238,6 +256,23 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
                     ),
                     items: [for (final b in branches) DropdownMenuItem(value: b, child: Text(b))],
                     onChanged: (v) => setState(() => _branch = v),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    key: ValueKey('section_$_year'),
+                    initialValue: _section,
+                    menuMaxHeight: 320,
+                    forceErrorText: err?.field('section'),
+                    validator: (v) => v == null ? 'Select your section' : null,
+                    decoration: InputDecoration(
+                      labelText: 'Section',
+                      hintText: _year == null ? 'Select year first' : null,
+                      prefixIcon: const Icon(Icons.groups_outlined),
+                    ),
+                    items: [
+                      for (final s in _availableSections) DropdownMenuItem(value: s, child: Text(s)),
+                    ],
+                    onChanged: _year == null ? null : (v) => setState(() => _section = v),
                   ),
                   const SizedBox(height: 28),
                   LoadingButton(label: 'Get my pass', loading: state.loading, onPressed: _submit),

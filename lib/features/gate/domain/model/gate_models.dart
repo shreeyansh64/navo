@@ -2,6 +2,8 @@
 class GateStudent {
   final String fullName;
   final String studentNumber;
+  final String? year;
+  final String? branch;
   final String section;
   final String? email;
   final String? imageUrl;
@@ -9,6 +11,8 @@ class GateStudent {
   const GateStudent({
     required this.fullName,
     required this.studentNumber,
+    this.year,
+    this.branch,
     required this.section,
     this.email,
     this.imageUrl,
@@ -17,6 +21,8 @@ class GateStudent {
   factory GateStudent.fromJson(Map<String, dynamic> json) => GateStudent(
         fullName: json['full_name']?.toString() ?? '',
         studentNumber: json['student_number']?.toString() ?? '',
+        year: json['year']?.toString(),
+        branch: json['branch']?.toString(),
         section: json['section']?.toString() ?? '',
         email: json['email']?.toString(),
         imageUrl: (json['image'] ?? json['image_url'])?.toString(),
