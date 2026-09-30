@@ -17,7 +17,6 @@ class StudentDetailsPage extends StatefulWidget {
 class _StudentDetailsPageState extends State<StudentDetailsPage> {
   final _formKey = GlobalKey<FormState>();
   final _token = TextEditingController();
-  bool _isReassigning = false;
   bool _userClearedError = false;
 
   @override
@@ -165,7 +164,7 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                   ),
                 ),
                 const SizedBox(height: 28),
-                if (hasAssignedToken && !_isReassigning) ...[
+                if (hasAssignedToken) ...[
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -205,19 +204,7 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        _isReassigning = true;
-                        _token.text = student.gateToken ?? '';
-                        _userClearedError = false;
-                      });
-                    },
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Reassign / Change Token'),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
                   FilledButton.icon(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.qr_code_scanner_rounded),
@@ -239,15 +226,15 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                         }
                       },
                       validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a token number' : null,
-                      decoration: InputDecoration(
-                        labelText: _isReassigning ? 'New token number' : 'Token number',
-                        prefixIcon: const Icon(Icons.confirmation_number_outlined),
+                      decoration: const InputDecoration(
+                        labelText: 'Token number',
+                        prefixIcon: Icon(Icons.confirmation_number_outlined),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   LoadingButton(
-                    label: _isReassigning ? 'Update token' : 'Assign token',
+                    label: 'Assign token',
                     loading: state.status == GateStatus.assigning,
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
@@ -256,18 +243,6 @@ class _StudentDetailsPageState extends State<StudentDetailsPage> {
                       }
                     },
                   ),
-                  if (_isReassigning) ...[
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _isReassigning = false;
-                          _userClearedError = false;
-                        });
-                      },
-                      child: const Text('Cancel'),
-                    ),
-                  ],
                 ],
               ],
             ),
