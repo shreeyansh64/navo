@@ -154,7 +154,7 @@ Request: `{"refresh":"<refresh token>"}`. Response is the rotated pair. The old 
 
 ### `POST /auth/complete-profile/` - 201
 
-Bearer token: normal access token. Form fields: `full_name`, `section`, `student_number`. Optional `image` (JPEG, PNG or WebP, max 5 MB).
+Bearer token: normal access token. Form fields: `full_name`, `section`, `year` (`1` or `2`), `branch` (one of `ME`, `ECE`, `EE`, `CSE`, `CSE(HINDI)`, `AIML`, `CSE(DS)`, `CSE(AIML)`, `IT`, `CS`, `CS IT`, `CE`), `student_number`, `image` (required; JPEG, PNG or WebP, max 5 MB).
 
 Response:
 

@@ -17,20 +17,23 @@ class ProfileRepositoryImpl implements ProfileRepository {
   Future<QrPass> completeProfile({
     required String fullName,
     required String section,
+    required String year,
+    required String branch,
     required String studentNumber,
-    File? image,
+    required File image,
   }) async {
     try {
       final form = FormData.fromMap({
         'full_name': fullName,
         'section': section,
+        'year': year,
+        'branch': branch,
         'student_number': studentNumber,
-        if (image != null)
-          'image': await MultipartFile.fromFile(
-            image.path,
-            filename: image.path.split(RegExp(r'[\/]')).last,
-            contentType: _mediaType(image.path),
-          ),
+        'image': await MultipartFile.fromFile(
+          image.path,
+          filename: image.path.split(RegExp(r'[\/]')).last,
+          contentType: _mediaType(image.path),
+        ),
       });
       final pass = QrPass.fromJson(await remote.completeProfile(form));
       await local.saveQr(pass.qrDataUri);

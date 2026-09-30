@@ -17,6 +17,8 @@ class CompleteProfileBloc extends Bloc<CompleteProfileEvent, CompleteProfileStat
         await repository.completeProfile(
           fullName: event.fullName,
           section: event.section,
+          year: event.year,
+          branch: event.branch,
           studentNumber: event.studentNumber,
           image: event.image,
         );

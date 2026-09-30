@@ -7,8 +7,10 @@ abstract class ProfileRepository {
   Future<QrPass> completeProfile({
     required String fullName,
     required String section,
+    required String year,
+    required String branch,
     required String studentNumber,
-    File? image,
+    required File image,
   });
 
   /// Fetches the current pass and caches its QR for offline use.

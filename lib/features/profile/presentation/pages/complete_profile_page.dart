@@ -16,6 +16,13 @@ const sections = ['S-1', 'S-2', 'S-3', 'S-4', 'S-5', 'S-6', 'S-7', 'S-8', 'S-9',
   'S-12', 'S-13', 'S-14', 'S-15', 'S-16', 'S-17', 'S-18', 'S-19', 'S-20', 'S-21', 'S-22', 'S-23',
   'S-24', 'S-25', 'S-26', 'S-27'];
 
+/// Dropdown label -> value sent to the API.
+const years = {'1st year': '1', '2nd year': '2'};
+
+/// Must match the backend's BranchValidator.
+const branches = ['ME', 'ECE', 'EE', 'CSE', 'CSE(HINDI)', 'AIML', 'CSE(DS)', 'CSE(AIML)', 'IT', 'CS',
+  'CS IT', 'CE'];
+
 class CompleteProfilePage extends StatelessWidget {
   const CompleteProfilePage({super.key});
 
@@ -41,7 +48,10 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
   final _studentNumber = TextEditingController();
   final _email = getIt<TokenStorage>().email;
   String? _section;
+  String? _year;
+  String? _branch;
   File? _image;
+  bool _imageMissing = false;
 
   @override
   void dispose() {
@@ -50,31 +60,14 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
     super.dispose();
   }
 
+  /// Camera only: the photo has to be taken on the spot, not picked from the gallery.
   Future<void> _pickImage() async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      showDragHandle: true,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take a photo'),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from gallery'),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-            ),
-          ],
-        ),
-      ),
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      maxWidth: 1080,
+      imageQuality: 85,
     );
-    if (source == null) return;
-
-    final picked = await ImagePicker().pickImage(source: source, maxWidth: 1080, imageQuality: 85);
     if (picked == null || !mounted) return;
 
     final ext = picked.path.split('.').last.toLowerCase();
@@ -85,16 +78,23 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
       if (mounted) showSnack(context, 'Image must be 5 MB or smaller.');
       return;
     }
-    setState(() => _image = File(picked.path));
+    setState(() {
+      _image = File(picked.path);
+      _imageMissing = false;
+    });
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+    final formValid = _formKey.currentState!.validate();
+    setState(() => _imageMissing = _image == null);
+    if (!formValid || _image == null) return;
     context.read<CompleteProfileBloc>().add(CompleteProfileSubmitted(
           fullName: _name.text.trim(),
           section: _section!,
+          year: _year!,
+          branch: _branch!,
           studentNumber: _studentNumber.text.trim(),
-          image: _image,
+          image: _image!,
         ));
   }
 
@@ -109,11 +109,12 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
           // student_number_taken is shown inline under the student number field.
           if (state.error != null && state.error!.code != ApiErrorCode.studentNumberTaken) {
             showApiError(context, state.error!,
-                inlineFields: {'full_name', 'section', 'student_number', 'image'});
+                inlineFields: {'full_name', 'section', 'year', 'branch', 'student_number', 'image'});
           }
         },
         builder: (context, state) {
           final err = state.error;
+          final imageError = err?.field('image') ?? (_imageMissing ? 'Take a photo to continue' : null);
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: Form(
@@ -153,9 +154,9 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    err?.field('image') ?? 'Photo (optional)',
+                    imageError ?? (_image == null ? 'Tap to take a photo' : 'Tap to retake'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: err?.field('image') != null ? scheme.error : scheme.onSurfaceVariant),
+                    style: TextStyle(color: imageError != null ? scheme.error : scheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 24),
                   FutureBuilder<String?>(
@@ -210,6 +211,33 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
                     ),
                     items: [for (final s in sections) DropdownMenuItem(value: s, child: Text(s))],
                     onChanged: (v) => setState(() => _section = v),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _year,
+                    forceErrorText: err?.field('year'),
+                    validator: (v) => v == null ? 'Select your year' : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Year',
+                      prefixIcon: Icon(Icons.calendar_today_outlined),
+                    ),
+                    items: [
+                      for (final y in years.entries) DropdownMenuItem(value: y.value, child: Text(y.key)),
+                    ],
+                    onChanged: (v) => setState(() => _year = v),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _branch,
+                    menuMaxHeight: 320,
+                    forceErrorText: err?.field('branch'),
+                    validator: (v) => v == null ? 'Select your branch' : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Branch',
+                      prefixIcon: Icon(Icons.account_tree_outlined),
+                    ),
+                    items: [for (final b in branches) DropdownMenuItem(value: b, child: Text(b))],
+                    onChanged: (v) => setState(() => _branch = v),
                   ),
                   const SizedBox(height: 28),
                   LoadingButton(label: 'Get my pass', loading: state.loading, onPressed: _submit),

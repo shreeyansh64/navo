@@ -4,6 +4,8 @@ import 'dart:typed_data';
 class StudentProfile {
   final String fullName;
   final String section;
+  final String? year;
+  final String? branch;
   final String studentNumber;
   final String? email;
   final String? imageUrl;
@@ -11,6 +13,8 @@ class StudentProfile {
   const StudentProfile({
     required this.fullName,
     required this.section,
+    this.year,
+    this.branch,
     required this.studentNumber,
     this.email,
     this.imageUrl,
@@ -19,6 +23,8 @@ class StudentProfile {
   factory StudentProfile.fromJson(Map<String, dynamic> json) => StudentProfile(
         fullName: json['full_name']?.toString() ?? '',
         section: json['section']?.toString() ?? '',
+        year: json['year']?.toString(),
+        branch: json['branch']?.toString(),
         studentNumber: json['student_number']?.toString() ?? '',
         email: json['email']?.toString(),
         imageUrl: (json['image'] ?? json['image_url'])?.toString(),
