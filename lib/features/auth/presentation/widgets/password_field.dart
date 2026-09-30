@@ -43,5 +43,11 @@ class _PasswordFieldState extends State<PasswordField> {
   }
 }
 
-String? validatePassword(String? v) =>
-    (v == null || v.length < 8) ? 'Password must be at least 8 characters' : null;
+String? validatePassword(String? v) {
+  if (v == null || v.isEmpty) return 'Enter your password';
+  if (v.length < 8 || v.length > 16) return 'Password must be between 8 and 16 characters';
+  if (!RegExp(r'[A-Z]').hasMatch(v)) return 'Password must contain at least one uppercase letter';
+  if (!RegExp(r'[a-z]').hasMatch(v)) return 'Password must contain at least one lowercase letter';
+  if (!RegExp(r'[0-9]').hasMatch(v)) return 'Password must contain at least one number';
+  return null;
+}
