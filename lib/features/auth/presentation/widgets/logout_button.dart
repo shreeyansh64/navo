@@ -11,13 +11,41 @@ class LogoutButton extends StatelessWidget {
   Future<void> _logout(BuildContext context) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Log out?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Log out')),
-        ],
-      ),
+      builder: (ctx) {
+        final scheme = Theme.of(ctx).colorScheme;
+        return AlertDialog(
+          icon: Icon(Icons.logout_rounded, color: scheme.error),
+          title: const Text('Log out?'),
+          content: const Text(
+            "You'll need to log in again to see your pass.",
+            textAlign: TextAlign.center,
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.error,
+                      foregroundColor: scheme.onError,
+                    ),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Log out'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
     if (ok != true) return;
     await getIt<AuthRepository>().logout();

@@ -86,7 +86,11 @@ class _HomeView extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${state.profile!.studentNumber} • ${state.profile!.branch ?? ''} (${state.profile!.section})',
+                                  [
+                                    state.profile!.studentNumber,
+                                    if (state.profile!.branch?.isNotEmpty ?? false) state.profile!.branch!,
+                                    state.profile!.section,
+                                  ].join(' • '),
                                   style: TextStyle(color: scheme.onSurfaceVariant),
                                   textAlign: TextAlign.center,
                                 ),

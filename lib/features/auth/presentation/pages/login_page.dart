@@ -43,7 +43,6 @@ class _LoginViewState extends State<_LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: SafeArea(
         child: BlocConsumer<LoginBloc, LoginState>(
@@ -61,18 +60,6 @@ class _LoginViewState extends State<_LoginView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: scheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Icon(Icons.qr_code_2_rounded, size: 36, color: scheme.onPrimaryContainer),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
                     const PageHeader(title: 'Welcome back', subtitle: 'Log in to get your entry pass'),
                     TextFormField(
                       controller: _email,
