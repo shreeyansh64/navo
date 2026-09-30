@@ -4,6 +4,7 @@ import 'package:navo/core/di/injection.dart';
 import 'package:navo/core/theme/app_theme.dart';
 import 'package:navo/features/auth/presentation/bloc/register/register_bloc.dart';
 import 'package:navo/features/auth/presentation/pages/register_otp_page.dart';
+import 'package:navo/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:navo/features/auth/presentation/widgets/password_field.dart';
 
 const collegeDomain = '@akgec.ac.in';
@@ -49,78 +50,86 @@ class _RegisterViewState extends State<_RegisterView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: BlocConsumer<RegisterBloc, RegisterState>(
-        // React only when a request finishes and this page is on top (not the OTP page).
-        listenWhen: (prev, cur) => prev.loading && !cur.loading,
-        listener: (context, state) {
-          if (ModalRoute.of(context)?.isCurrent != true) return;
-          if (state.step == RegisterStep.otp) {
-            Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => BlocProvider.value(
-                value: context.read<RegisterBloc>(),
-                child: const RegisterOtpPage(),
-              ),
-            ));
-          } else if (state.error != null) {
-            showApiError(context, state.error!,
-                inlineFields: {'email', 'password', 'confirm_password'});
-          }
-        },
-        builder: (context, state) {
-          final onForm = state.step == RegisterStep.form;
-          final err = onForm ? state.error : null;
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const PageHeader(
-                    title: 'Create account',
-                    subtitle: 'Use your college email ($collegeDomain)',
-                  ),
-                  TextFormField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    forceErrorText: err?.field('email'),
-                    validator: (v) => (v ?? '').trim().toLowerCase().endsWith(collegeDomain)
-                        ? null
-                        : 'Only $collegeDomain emails are allowed',
-                    decoration: const InputDecoration(
-                      labelText: 'College email',
-                      prefixIcon: Icon(Icons.mail_outline),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  PasswordField(
-                    controller: _password,
-                    textInputAction: TextInputAction.next,
-                    serverError: err?.field('password'),
-                    validator: validatePassword,
-                  ),
-                  const SizedBox(height: 16),
-                  PasswordField(
-                    controller: _confirm,
-                    label: 'Confirm password',
-                    serverError: err?.field('confirm_password'),
-                    validator: (v) => v != _password.text ? 'Passwords do not match' : null,
-                  ),
-                  const SizedBox(height: 28),
-                  LoadingButton(
-                    label: 'Send verification code',
-                    loading: state.loading && onForm,
-                    onPressed: _submit,
-                  ),
-                ],
-              ),
+    return BlocConsumer<RegisterBloc, RegisterState>(
+      // React only when a request finishes and this page is on top (not the OTP page).
+      listenWhen: (prev, cur) => prev.loading && !cur.loading,
+      listener: (context, state) {
+        if (ModalRoute.of(context)?.isCurrent != true) return;
+        if (state.step == RegisterStep.otp) {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: context.read<RegisterBloc>(),
+              child: const RegisterOtpPage(),
             ),
-          );
-        },
-      ),
+          ));
+        } else if (state.error != null) {
+          showApiError(context, state.error!,
+              inlineFields: {'email', 'password', 'confirm_password'});
+        }
+      },
+      builder: (context, state) {
+        final onForm = state.step == RegisterStep.form;
+        final err = onForm ? state.error : null;
+        return AuthShell(
+          icon: Icons.person_add_alt_1_rounded,
+          title: 'Create account',
+          subtitle: 'Use your college email ($collegeDomain)',
+          footer: const DesignCredit(),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  forceErrorText: err?.field('email'),
+                  validator: (v) => (v ?? '').trim().toLowerCase().endsWith(collegeDomain)
+                      ? null
+                      : 'Only $collegeDomain emails are allowed',
+                  decoration: const InputDecoration(
+                    labelText: 'College email',
+                    prefixIcon: Icon(Icons.mail_outline),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                PasswordField(
+                  controller: _password,
+                  textInputAction: TextInputAction.next,
+                  serverError: err?.field('password'),
+                  validator: validatePassword,
+                ),
+                const SizedBox(height: 16),
+                PasswordField(
+                  controller: _confirm,
+                  label: 'Confirm password',
+                  serverError: err?.field('confirm_password'),
+                  validator: (v) => v != _password.text ? 'Passwords do not match' : null,
+                ),
+                const SizedBox(height: 28),
+                LoadingButton(
+                  label: 'Send verification code',
+                  loading: state.loading && onForm,
+                  onPressed: _submit,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    const Text('Already have an account?'),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Log in'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

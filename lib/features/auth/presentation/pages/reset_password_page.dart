@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:navo/core/api/api_error.dart';
 import 'package:navo/core/theme/app_theme.dart';
 import 'package:navo/features/auth/presentation/bloc/forgot_password/forgot_password_bloc.dart';
+import 'package:navo/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:navo/features/auth/presentation/widgets/password_field.dart';
 
 /// Step 3 of 3. Expects the [ForgotPasswordBloc] via BlocProvider.value.
@@ -40,47 +41,45 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
-        listenWhen: (prev, cur) => prev.loading && !cur.loading,
-        listener: (context, state) {
-          final e = state.error;
-          if (state.step == ForgotStep.done) {
-            showSnack(context, 'Password changed. Please log in.', error: false);
-            Navigator.of(context).popUntil((route) => route.isFirst);
-          } else if (e != null) {
-            showApiError(context, e, inlineFields: {'password', 'confirm_password'});
-            // The code is no longer usable, so send the user back to request a new one.
-            if (_otpErrors.contains(e.code)) Navigator.of(context).pop();
-          }
-        },
-        builder: (context, state) => SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const PageHeader(title: 'New password', subtitle: 'Choose a password with at least 8 characters.'),
-                PasswordField(
-                  controller: _password,
-                  label: 'New password',
-                  textInputAction: TextInputAction.next,
-                  serverError: state.error?.field('password'),
-                  validator: validatePassword,
-                ),
-                const SizedBox(height: 16),
-                PasswordField(
-                  controller: _confirm,
-                  label: 'Confirm password',
-                  serverError: state.error?.field('confirm_password'),
-                  validator: (v) => v != _password.text ? 'Passwords do not match' : null,
-                ),
-                const SizedBox(height: 28),
-                LoadingButton(label: 'Reset password', loading: state.loading, onPressed: _submit),
-              ],
-            ),
+    return BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
+      listenWhen: (prev, cur) => prev.loading && !cur.loading,
+      listener: (context, state) {
+        final e = state.error;
+        if (state.step == ForgotStep.done) {
+          showSnack(context, 'Password changed. Please log in.', error: false);
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        } else if (e != null) {
+          showApiError(context, e, inlineFields: {'password', 'confirm_password'});
+          // The code is no longer usable, so send the user back to request a new one.
+          if (_otpErrors.contains(e.code)) Navigator.of(context).pop();
+        }
+      },
+      builder: (context, state) => AuthShell(
+        icon: Icons.password_rounded,
+        title: 'New password',
+        subtitle: 'Choose a password with at least 8 characters.',
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              PasswordField(
+                controller: _password,
+                label: 'New password',
+                textInputAction: TextInputAction.next,
+                serverError: state.error?.field('password'),
+                validator: validatePassword,
+              ),
+              const SizedBox(height: 16),
+              PasswordField(
+                controller: _confirm,
+                label: 'Confirm password',
+                serverError: state.error?.field('confirm_password'),
+                validator: (v) => v != _password.text ? 'Passwords do not match' : null,
+              ),
+              const SizedBox(height: 28),
+              LoadingButton(label: 'Reset password', loading: state.loading, onPressed: _submit),
+            ],
           ),
         ),
       ),

@@ -10,32 +10,26 @@ class ForgotOtpPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
-        listenWhen: (prev, cur) => prev.loading && !cur.loading,
-        listener: (context, state) {
-          if (ModalRoute.of(context)?.isCurrent != true) return;
-          if (state.error == null && state.step == ForgotStep.reset) {
-            Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => BlocProvider.value(
-                value: context.read<ForgotPasswordBloc>(),
-                child: const ResetPasswordPage(),
-              ),
-            ));
-          }
-        },
-        builder: (context, state) => SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          child: OtpView(
-            email: state.email,
-            timer: state.otp,
-            loading: state.loading,
-            errorText: state.error?.displayMessage,
-            onSubmit: (otp) => context.read<ForgotPasswordBloc>().add(ForgotOtpSubmitted(otp)),
-            onResend: () => context.read<ForgotPasswordBloc>().add(ForgotOtpResent()),
-          ),
-        ),
+    return BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
+      listenWhen: (prev, cur) => prev.loading && !cur.loading,
+      listener: (context, state) {
+        if (ModalRoute.of(context)?.isCurrent != true) return;
+        if (state.error == null && state.step == ForgotStep.reset) {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: context.read<ForgotPasswordBloc>(),
+              child: const ResetPasswordPage(),
+            ),
+          ));
+        }
+      },
+      builder: (context, state) => OtpView(
+        email: state.email,
+        timer: state.otp,
+        loading: state.loading,
+        errorText: state.error?.displayMessage,
+        onSubmit: (otp) => context.read<ForgotPasswordBloc>().add(ForgotOtpSubmitted(otp)),
+        onResend: () => context.read<ForgotPasswordBloc>().add(ForgotOtpResent()),
       ),
     );
   }

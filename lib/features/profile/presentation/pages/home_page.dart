@@ -84,22 +84,29 @@ class _HomeView extends StatelessWidget {
                                       ),
                                   textAlign: TextAlign.center,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  [
-                                    state.profile!.studentNumber,
-                                    if (state.profile!.branch?.isNotEmpty ?? false) state.profile!.branch!,
-                                    state.profile!.section,
-                                  ].join(' • '),
-                                  style: TextStyle(color: scheme.onSurfaceVariant),
-                                  textAlign: TextAlign.center,
+                                const SizedBox(height: 12),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  child: Wrap(
+                                    alignment: WrapAlignment.center,
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      _Pill(icon: Icons.numbers_rounded, label: state.profile!.studentNumber),
+                                      if (state.profile!.branch?.isNotEmpty ?? false)
+                                        _Pill(icon: Icons.account_tree_outlined, label: state.profile!.branch!),
+                                      _Pill(icon: Icons.groups_outlined, label: state.profile!.section),
+                                    ],
+                                  ),
                                 ),
                               ],
                               if (state.status == HomeStatus.offline) ...[
                                 const SizedBox(height: 16),
-                                Text(
-                                  'Offline · showing saved pass',
-                                  style: TextStyle(color: scheme.onSurfaceVariant),
+                                _Pill(
+                                  icon: Icons.cloud_off_rounded,
+                                  label: 'Offline · showing saved pass',
+                                  background: scheme.surfaceContainerHighest,
+                                  foreground: scheme.onSurfaceVariant,
                                 ),
                               ],
                             ],
@@ -196,15 +203,48 @@ class _CardFace extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.12),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: scheme.primary.withValues(alpha: 0.16),
+            blurRadius: 32,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       child: SizedBox(width: 240, height: 240, child: child),
+    );
+  }
+}
+
+/// Small rounded label with a leading icon, used for the profile details under the pass.
+class _Pill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? background;
+  final Color? foreground;
+  const _Pill({required this.icon, required this.label, this.background, this.foreground});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = foreground ?? scheme.onPrimaryContainer;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: background ?? scheme.primaryContainer.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: fg),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fg)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -267,7 +307,7 @@ class _Placeholder extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off_rounded, size: 48),
+          Icon(Icons.cloud_off_rounded, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 12),
           Text(state.error?.displayMessage ?? 'Could not load your pass.', textAlign: TextAlign.center),
           const SizedBox(height: 16),

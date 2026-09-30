@@ -4,9 +4,26 @@ import 'package:navo/core/api/api_error.dart';
 class AppTheme {
   static const seed = Color(0xFF3949AB);
 
+  /// Header gradient of the auth screens.
+  static const brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF283593), seed, Color(0xFF5160C2)],
+  );
+
   static ThemeData get light {
-    final scheme = ColorScheme.fromSeed(seedColor: seed);
+    // The generated primary is a muted tone of the seed; use the seed itself so
+    // buttons match the brand gradient.
+    final scheme = ColorScheme.fromSeed(seedColor: seed).copyWith(primary: seed);
     final radius = BorderRadius.circular(14);
+    OutlineInputBorder inputBorder([BorderSide side = BorderSide.none]) =>
+        OutlineInputBorder(borderRadius: radius, borderSide: side);
+    Color fieldIconColor(Set<WidgetState> states) {
+      if (states.contains(WidgetState.error)) return scheme.error;
+      if (states.contains(WidgetState.focused)) return scheme.primary;
+      return scheme.onSurfaceVariant;
+    }
+
     return ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
@@ -15,40 +32,50 @@ class AppTheme {
         centerTitle: true,
         backgroundColor: scheme.surface,
         surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: scheme.onSurface),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        border: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide.none),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: radius,
-          borderSide: BorderSide(color: scheme.primary, width: 1.5),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        prefixIconColor: WidgetStateColor.resolveWith(fieldIconColor),
+        border: inputBorder(),
+        enabledBorder: inputBorder(),
+        focusedBorder: inputBorder(BorderSide(color: scheme.primary, width: 1.5)),
+        errorBorder: inputBorder(BorderSide(color: scheme.error)),
+        focusedErrorBorder: inputBorder(BorderSide(color: scheme.error, width: 1.5)),
         errorMaxLines: 3,
       ),
       // Height only: full-width buttons get their width from a stretched parent,
       // so buttons in dialogs and rows keep their natural size.
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(64, 52),
+          minimumSize: const Size(64, 54),
           shape: RoundedRectangleBorder(borderRadius: radius),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.2),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(64, 52),
+          minimumSize: const Size(64, 54),
           shape: RoundedRectangleBorder(borderRadius: radius),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          side: BorderSide(color: scheme.outlineVariant),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: 0.2),
         ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(textStyle: const TextStyle(fontWeight: FontWeight.w600)),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: scheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
-      snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: radius),
+      ),
     );
   }
 }

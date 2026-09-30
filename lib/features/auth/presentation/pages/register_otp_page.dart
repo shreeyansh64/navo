@@ -11,22 +11,16 @@ class RegisterOtpPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: BlocConsumer<RegisterBloc, RegisterState>(
-        listenWhen: (prev, cur) => prev.step != cur.step && cur.step == RegisterStep.done,
-        listener: (context, state) => goTo(const CompleteProfilePage()),
-        builder: (context, state) => SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          child: OtpView(
-            email: state.email,
-            timer: state.otp,
-            loading: state.loading,
-            errorText: state.error?.displayMessage,
-            onSubmit: (otp) => context.read<RegisterBloc>().add(RegisterOtpSubmitted(otp)),
-            onResend: () => context.read<RegisterBloc>().add(RegisterOtpResent()),
-          ),
-        ),
+    return BlocConsumer<RegisterBloc, RegisterState>(
+      listenWhen: (prev, cur) => prev.step != cur.step && cur.step == RegisterStep.done,
+      listener: (context, state) => goTo(const CompleteProfilePage()),
+      builder: (context, state) => OtpView(
+        email: state.email,
+        timer: state.otp,
+        loading: state.loading,
+        errorText: state.error?.displayMessage,
+        onSubmit: (otp) => context.read<RegisterBloc>().add(RegisterOtpSubmitted(otp)),
+        onResend: () => context.read<RegisterBloc>().add(RegisterOtpResent()),
       ),
     );
   }
