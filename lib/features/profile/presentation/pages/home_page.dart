@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:navo/app_router.dart';
@@ -49,74 +51,29 @@ class _HomeView extends StatelessWidget {
                         : Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (state.profile?.gateToken != null && state.profile!.gateToken!.isNotEmpty) ...[
-                                Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.green.shade300, width: 1.5),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.green.withValues(alpha: 0.1),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.verified_rounded, color: Colors.green.shade700, size: 28),
-                                      const SizedBox(width: 12),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Gate Token Assigned',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.green.shade800,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                          Text(
-                                            'Token #${state.profile!.gateToken}',
-                                            style: TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.green.shade900,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
+                              _FlipCard(
+                                front: _CardFace(
+                                  child: Image.memory(
+                                    qrBytes(qr),
+                                    width: 240,
+                                    height: 240,
+                                    gaplessPlayback: true,
+                                    filterQuality: FilterQuality.none,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                              ],
-                              Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(28),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: scheme.shadow.withValues(alpha: 0.12),
-                                      blurRadius: 24,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Image.memory(
-                                  qrBytes(qr),
-                                  width: 240,
-                                  height: 240,
-                                  gaplessPlayback: true,
-                                  filterQuality: FilterQuality.none,
-                                ),
+                                back: _CardFace(child: _TokenFace(token: state.profile?.gateToken)),
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.swipe_rounded, size: 16, color: scheme.onSurfaceVariant),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Swipe to see your gate token',
+                                    style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                                  ),
+                                ],
                               ),
                               if (state.profile != null) ...[
                                 const SizedBox(height: 20),
@@ -150,6 +107,146 @@ class _HomeView extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Card that flips around its Y axis when swiped horizontally.
+class _FlipCard extends StatefulWidget {
+  final Widget front;
+  final Widget back;
+  const _FlipCard({required this.front, required this.back});
+
+  @override
+  State<_FlipCard> createState() => _FlipCardState();
+}
+
+class _FlipCardState extends State<_FlipCard> with SingleTickerProviderStateMixin {
+  // Drag distance (px) that corresponds to a half turn.
+  static const _dragExtent = 280.0;
+
+  // Rotation angle in radians; a multiple of pi when at rest.
+  late final AnimationController _angle = AnimationController.unbounded(vsync: this);
+
+  @override
+  void dispose() {
+    _angle.dispose();
+    super.dispose();
+  }
+
+  void _onDragUpdate(DragUpdateDetails d) {
+    _angle.stop();
+    _angle.value += d.delta.dx / _dragExtent * math.pi;
+  }
+
+  void _onDragEnd(DragEndDetails d) {
+    final turns = _angle.value / math.pi;
+    final velocity = d.velocity.pixelsPerSecond.dx;
+    final double target;
+    if (velocity.abs() > 300) {
+      target = (velocity > 0 ? turns.ceilToDouble() : turns.floorToDouble());
+    } else {
+      target = turns.roundToDouble();
+    }
+    _angle.animateTo(target * math.pi, duration: const Duration(milliseconds: 450), curve: Curves.easeOutCubic);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragUpdate: _onDragUpdate,
+      onHorizontalDragEnd: _onDragEnd,
+      child: AnimatedBuilder(
+        animation: _angle,
+        builder: (context, _) {
+          final angle = _angle.value;
+          final showBack = math.cos(angle) < 0;
+          return Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(angle),
+            child: showBack
+                ? Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationY(math.pi),
+                    child: widget.back,
+                  )
+                : widget.front,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CardFace extends StatelessWidget {
+  final Widget child;
+  const _CardFace({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: 0.12),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: SizedBox(width: 240, height: 240, child: child),
+    );
+  }
+}
+
+class _TokenFace extends StatelessWidget {
+  final String? token;
+  const _TokenFace({required this.token});
+
+  @override
+  Widget build(BuildContext context) {
+    final assigned = token != null && token!.isNotEmpty;
+    if (!assigned) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.confirmation_number_outlined, size: 56, color: Colors.grey.shade500),
+          const SizedBox(height: 12),
+          Text(
+            'No token assigned',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey.shade700),
+          ),
+        ],
+      );
+    }
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.verified_rounded, size: 48, color: Colors.green.shade700),
+        const SizedBox(height: 8),
+        Text(
+          'GATE TOKEN',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.5,
+            color: Colors.green.shade800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        FittedBox(
+          child: Text(
+            '#$token',
+            style: TextStyle(fontSize: 64, fontWeight: FontWeight.bold, color: Colors.green.shade900),
+          ),
+        ),
+      ],
     );
   }
 }
