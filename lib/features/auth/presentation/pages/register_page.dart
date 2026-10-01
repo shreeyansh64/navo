@@ -8,6 +8,25 @@ import 'package:navo/features/auth/presentation/widgets/auth_shell.dart';
 import 'package:navo/features/auth/presentation/widgets/password_field.dart';
 
 const collegeDomain = '@akgec.ac.in';
+const gmailDomain = '@gmail.com';
+
+String? validateEmail(String? v) {
+  final val = (v ?? '').trim().toLowerCase();
+  if (val.isEmpty) return 'Enter your email';
+  if (val.endsWith(collegeDomain)) {
+    final prefix = val.split('@').first;
+    if (!RegExp(r'(25|26)\d{5,6}').hasMatch(prefix)) {
+      return 'AKGEC email must contain a student number starting with 25 or 26';
+    }
+    return null;
+  }
+  if (val.endsWith(gmailDomain)) {
+    final prefix = val.split('@').first;
+    if (prefix.isEmpty) return 'Enter a valid Gmail address';
+    return null;
+  }
+  return 'Only $collegeDomain or $gmailDomain emails are allowed';
+}
 
 class RegisterPage extends StatelessWidget {
   const RegisterPage({super.key});
@@ -73,7 +92,7 @@ class _RegisterViewState extends State<_RegisterView> {
         return AuthShell(
           icon: Icons.person_add_alt_1_rounded,
           title: 'Create account',
-          subtitle: 'Use your college email ($collegeDomain)',
+          subtitle: 'Use your college ($collegeDomain) or Gmail ($gmailDomain) email',
           footer: const DeveloperCredit(),
           child: Form(
             key: _formKey,
@@ -85,11 +104,9 @@ class _RegisterViewState extends State<_RegisterView> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   forceErrorText: err?.field('email'),
-                  validator: (v) => (v ?? '').trim().toLowerCase().endsWith(collegeDomain)
-                      ? null
-                      : 'Only $collegeDomain emails are allowed',
+                  validator: validateEmail,
                   decoration: const InputDecoration(
-                    labelText: 'College email',
+                    labelText: 'Email',
                     prefixIcon: Icon(Icons.mail_outline),
                   ),
                 ),

@@ -4,7 +4,7 @@ Base URL: `http://127.0.0.1:8000/api` (local). Interactive docs: `/api/docs/`. O
 
 JSON requests use `Content-Type: application/json`. Profile completion uses `multipart/form-data`. Authenticated endpoints use `Authorization: Bearer <access_token>`.
 
-Registration and password reset accept only `@akgec.ac.in` emails. Login accepts any email (so gate admins with other domains can sign in). Emails are trimmed and lowercased by the server.
+Registration and password reset accept `@akgec.ac.in` and `@gmail.com` emails. Login accepts any email (so gate admins with other domains can sign in). Emails are trimmed and lowercased by the server.
 
 ## App flow
 
@@ -35,7 +35,7 @@ Every non-success response:
   "error": {
     "code": "validation_error",
     "message": "Request validation failed.",
-    "fields": {"email": ["Only an AKGEC email address is allowed."]},
+    "fields": {"email": ["Only AKGEC (@akgec.ac.in) or Gmail (@gmail.com) email addresses are allowed."]},
     "meta": {"retry_after": 60}
   }
 }

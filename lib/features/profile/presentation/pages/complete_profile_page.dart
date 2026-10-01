@@ -226,7 +226,8 @@ class _CompleteProfileViewState extends State<_CompleteProfileView> {
                         return 'Student number must be 7-8 digits starting with 25 or 26';
                       }
                       if (_userEmail != null && _userEmail!.isNotEmpty) {
-                        if (!_userEmail!.toLowerCase().contains(val.toLowerCase())) {
+                        final email = _userEmail!.toLowerCase();
+                        if (email.endsWith('@akgec.ac.in') && !email.contains(val.toLowerCase())) {
                           return 'Email must contain the student number: $val';
                         }
                       }

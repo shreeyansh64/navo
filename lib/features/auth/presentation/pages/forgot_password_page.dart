@@ -4,7 +4,7 @@ import 'package:navo/core/di/injection.dart';
 import 'package:navo/core/theme/app_theme.dart';
 import 'package:navo/features/auth/presentation/bloc/forgot_password/forgot_password_bloc.dart';
 import 'package:navo/features/auth/presentation/pages/forgot_otp_page.dart';
-import 'package:navo/features/auth/presentation/pages/register_page.dart' show collegeDomain;
+import 'package:navo/features/auth/presentation/pages/register_page.dart' show validateEmail;
 import 'package:navo/features/auth/presentation/widgets/auth_shell.dart';
 
 /// Step 1 of 3: ask for the email. The same bloc drives the OTP and reset pages.
@@ -54,7 +54,7 @@ class _ForgotViewState extends State<_ForgotView> {
       builder: (context, state) => AuthShell(
         icon: Icons.lock_reset_rounded,
         title: 'Forgot password?',
-        subtitle: "Enter your college email and we'll send you a reset code.",
+        subtitle: "Enter your registered email and we'll send you a reset code.",
         child: Form(
           key: _formKey,
           child: Column(
@@ -64,11 +64,9 @@ class _ForgotViewState extends State<_ForgotView> {
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
                 forceErrorText: state.error?.field('email'),
-                validator: (v) => (v ?? '').trim().toLowerCase().endsWith(collegeDomain)
-                    ? null
-                    : 'Only $collegeDomain emails are allowed',
+                validator: validateEmail,
                 decoration: const InputDecoration(
-                  labelText: 'College email',
+                  labelText: 'Email',
                   prefixIcon: Icon(Icons.mail_outline),
                 ),
               ),
