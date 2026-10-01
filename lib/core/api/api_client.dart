@@ -15,8 +15,13 @@ class ApiClient {
   late final Dio _plainDio;
 
   ApiClient({required this.tokenStorage}) {
+    var base = (dotenv.env['BASE_URL'] ?? '').trim();
+    if (base.isEmpty) {
+      throw StateError('BASE_URL is not defined in .env');
+    }
+    if (!base.endsWith('/')) base = '$base/';
     final options = BaseOptions(
-      baseUrl: dotenv.env['BASE_URL']!,
+      baseUrl: base,
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 20),
     );
@@ -31,7 +36,13 @@ class _AuthInterceptor extends QueuedInterceptor {
 
   TokenStorage get _storage => client.tokenStorage;
 
-  bool _isPublic(RequestOptions o) => ApiEndpoints.public.contains(o.path);
+  bool _isPublic(RequestOptions o) {
+    final path = o.path.startsWith('/') ? o.path.substring(1) : o.path;
+    return ApiEndpoints.public.any((p) {
+      final cleanP = p.startsWith('/') ? p.substring(1) : p;
+      return cleanP == path;
+    });
+  }
 
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
