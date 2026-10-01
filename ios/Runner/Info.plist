@@ -8,6 +8,10 @@
 	<string>The camera is used to scan entry passes and take your profile photo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Your photo library is used to choose a profile photo.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Navo does not record audio. This permission is never requested.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -60,8 +64,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
