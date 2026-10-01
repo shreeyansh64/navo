@@ -32,6 +32,8 @@ const branches = [
   'CS',
   'CS IT',
   'CE',
+  'MBA',
+  'MCA',
 ];
 
 class CompleteProfilePage extends StatelessWidget {
